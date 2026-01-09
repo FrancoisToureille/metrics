@@ -1,0 +1,45 @@
+name: Java Report
+
+on: [push, pull_request]
+
+jobs:
+  java-report:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Fail if any .class files exist
+      run: |
+        if find . -name '*.class' | grep -q .; then
+          echo "ERROR: Compiled .class files found!"
+          exit 1
+        fi
+
+    - name: Generate java-file-report.txt
+      run: |
+        java_files=$(find . -name '*.java')
+        if [ -z "$java_files" ]; then
+          echo "ERROR: No .java files found!"
+          exit 1
+        fi
+
+        total_lines=0
+        file_count=0
+        echo "" > java-file-report.txt
+        for f in $java_files; do
+          lines=$(wc -l < "$f")
+          echo "$f - $lines" >> java-file-report.txt
+          total_lines=$((total_lines + lines))
+          file_count=$((file_count + 1))
+        done
+
+        echo "" >> java-file-report.txt
+        echo "Total .java files: $file_count" >> java-file-report.txt
+        echo "Total lines of code: $total_lines" >> java-file-report.txt
+
+    - name: Upload report
+      uses: actions/upload-artifact@v3
+      with:
+        name: java-file-report
+        path: java-file-report.txt
